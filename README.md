@@ -37,6 +37,13 @@ cd /home/op/neutts-openai-gpu-server
 ./scripts/launch_gpu_local.sh
 ```
 
+Or run it in the background:
+
+```bash
+./scripts/start_gpu_daemon_local.sh
+tail -f /tmp/neutts_gpu_server.log
+```
+
 Default URL:
 
 ```text
