@@ -1,0 +1,21 @@
+[Unit]
+Description=NeuTTS OpenAI GPU Server
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/op/neutts-openai-gpu-server
+Environment=NEUTTS_ROOT=/home/op/neutts
+Environment=NEUTTS_VENV=/home/op/neutts/.venv
+Environment=NEUTTS_LLAMA_CPP_LIB_PATH=/home/op/llama.cpp/build-cuda/bin
+Environment=NEUTTS_VOICES_DIR=/home/op/neutts/samples
+Environment=NEUTTS_HOST=127.0.0.1
+Environment=NEUTTS_PORT=12435
+Environment=NEUTTS_BACKBONE_DEVICE=gpu
+Environment=NEUTTS_CODEC_DEVICE=cpu
+ExecStart=/home/op/neutts-openai-gpu-server/scripts/launch_gpu_local.sh
+Restart=on-failure
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
