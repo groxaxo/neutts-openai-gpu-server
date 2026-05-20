@@ -130,7 +130,12 @@ Look for:
 {
   "backbone_device": "gpu",
   "codec_device": "cpu",
-  "llama_gpu_offload_supported": true
+  "llama_gpu_offload_supported": true,
+  "cpu_affinity": [0, 1, 2, 3],
+  "llama_options": {
+    "n_threads": 4,
+    "n_threads_batch": 4
+  }
 }
 ```
 
@@ -159,6 +164,13 @@ http://127.0.0.1:12436/v1/audio/speech
 - `NEUTTS_LLAMA_CPP_LIB_PATH`: path containing CUDA `libllama.so`
 - `NEUTTS_VOICES_DIR`: directory with `<voice>.pt` and `<voice>.txt`
 - `NEUTTS_DEFAULT_VOICE`: default `jo`
+- `NEUTTS_CPU_AFFINITY`: Linux CPU affinity such as `0-3`
+- `NEUTTS_LLAMA_THREADS`: forwarded to llama.cpp `n_threads`
+- `NEUTTS_LLAMA_THREADS_BATCH`: forwarded to llama.cpp `n_threads_batch`
+- `NEUTTS_LLAMA_BATCH`: forwarded to llama.cpp `n_batch`
+- `NEUTTS_LLAMA_UBATCH`: forwarded to llama.cpp `n_ubatch`
+- `NEUTTS_LLAMA_FLASH_ATTN`: force llama.cpp `flash_attn`, for example `0`
+- `NEUTTS_LLAMA_OFFLOAD_KQV`: force llama.cpp `offload_kqv`
 
 ## Notes
 
@@ -168,3 +180,6 @@ http://127.0.0.1:12436/v1/audio/speech
   on startup by default. Set `NEUTTS_KEEP_LIBPATH=1` only if you know you need it.
 - On small or older GPUs, GPU offload may reduce CPU load more than it improves
   wall-clock latency.
+- On non-hybrid CPUs there are no P/E cores. A useful first tuning pass is to
+  pin the server to one logical CPU per physical core, for example `0-3` on a
+  4-core/8-thread i7-4790.

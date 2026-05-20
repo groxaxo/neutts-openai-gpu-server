@@ -14,6 +14,29 @@ from pathlib import Path
 os.environ.setdefault("HF_HUB_DISABLE_XET", "1")
 os.environ.setdefault("HF_HUB_ENABLE_HF_TRANSFER", "0")
 
+
+def apply_cpu_affinity():
+    affinity = os.environ.get("NEUTTS_CPU_AFFINITY", "").strip()
+    if not affinity:
+        return None
+
+    cpus = set()
+    for part in affinity.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        if "-" in part:
+            start, end = part.split("-", 1)
+            cpus.update(range(int(start), int(end) + 1))
+        else:
+            cpus.add(int(part))
+
+    os.sched_setaffinity(0, cpus)
+    return sorted(cpus)
+
+
+CPU_AFFINITY = apply_cpu_affinity()
+
 if os.environ.get("NEUTTS_LLAMA_CPP_LIB_PATH"):
     os.environ.setdefault("LLAMA_CPP_LIB_PATH", os.environ["NEUTTS_LLAMA_CPP_LIB_PATH"])
 
@@ -39,6 +62,57 @@ SAMPLE_RATE = int(os.environ.get("NEUTTS_SAMPLE_RATE", "24000"))
 DEFAULT_BACKBONE = os.environ.get("NEUTTS_BACKBONE", "neuphonic/neutts-nano-q4-gguf")
 DEFAULT_CODEC = os.environ.get("NEUTTS_CODEC", "neuphonic/neucodec-onnx-decoder")
 DEFAULT_VOICE = os.environ.get("NEUTTS_DEFAULT_VOICE", "jo")
+
+
+def env_int(name: str):
+    value = os.environ.get(name)
+    return int(value) if value not in {None, ""} else None
+
+
+def env_bool(name: str):
+    value = os.environ.get(name)
+    if value in {None, ""}:
+        return None
+    return value.lower() in {"1", "true", "yes", "on"}
+
+
+def configure_llama_cpp_defaults():
+    try:
+        import llama_cpp
+    except Exception:
+        return {}
+
+    if getattr(llama_cpp, "_neutts_tuned", False):
+        return getattr(llama_cpp, "_neutts_tuned_options", {})
+
+    options = {
+        "n_threads": env_int("NEUTTS_LLAMA_THREADS"),
+        "n_threads_batch": env_int("NEUTTS_LLAMA_THREADS_BATCH"),
+        "n_batch": env_int("NEUTTS_LLAMA_BATCH"),
+        "n_ubatch": env_int("NEUTTS_LLAMA_UBATCH"),
+        "flash_attn": env_bool("NEUTTS_LLAMA_FLASH_ATTN"),
+        "offload_kqv": env_bool("NEUTTS_LLAMA_OFFLOAD_KQV"),
+    }
+    options = {key: value for key, value in options.items() if value is not None}
+    if not options:
+        llama_cpp._neutts_tuned = True
+        llama_cpp._neutts_tuned_options = {}
+        return {}
+
+    original_llama = llama_cpp.Llama
+
+    class TunedLlama(original_llama):
+        def __init__(self, *args, **kwargs):
+            kwargs.update(options)
+            super().__init__(*args, **kwargs)
+
+    TunedLlama.__name__ = original_llama.__name__
+    TunedLlama.__qualname__ = original_llama.__qualname__
+    TunedLlama.__module__ = original_llama.__module__
+    llama_cpp.Llama = TunedLlama
+    llama_cpp._neutts_tuned = True
+    llama_cpp._neutts_tuned_options = options
+    return options
 
 
 def default_voices_dir() -> Path:
@@ -79,6 +153,7 @@ class TTSRuntime:
         started = time.perf_counter()
         self.backbone_device = backbone_device
         self.codec_device = codec_device
+        self.llama_options = configure_llama_cpp_defaults()
         self.gpu_offload_supported_before_load = llama_gpu_offload_status()
         self.tts = NeuTTS(
             backbone_repo=DEFAULT_BACKBONE,
@@ -164,6 +239,8 @@ class Handler(BaseHTTPRequestHandler):
                     "codec_device": runtime.codec_device,
                     "llama_cpp_lib_path": os.environ.get("LLAMA_CPP_LIB_PATH"),
                     "llama_gpu_offload_supported": runtime.gpu_offload_supported,
+                    "cpu_affinity": CPU_AFFINITY,
+                    "llama_options": runtime.llama_options,
                     "load_seconds": runtime.load_seconds,
                     "voices_dir": str(VOICES_DIR),
                     "voices": available_voices(),
