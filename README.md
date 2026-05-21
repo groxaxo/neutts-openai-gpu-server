@@ -107,6 +107,28 @@ Stop:
 ./scripts/stop_gradio_local.sh
 ```
 
+Zero-boot-overhead option (socket activation):
+
+```bash
+sudo cp systemd/neutts-gradio.socket.example /etc/systemd/system/neutts-gradio.socket
+sudo cp systemd/neutts-gradio-on-demand.service.example /etc/systemd/system/neutts-gradio.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now neutts-gradio.socket
+```
+
+Open:
+
+```text
+http://127.0.0.1:7860
+```
+
+Disable:
+
+```bash
+sudo systemctl stop neutts-gradio.socket
+sudo systemctl disable neutts-gradio.socket
+```
+
 Systemd (auto-start):
 
 ```bash

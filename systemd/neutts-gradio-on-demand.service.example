@@ -1,0 +1,22 @@
+[Unit]
+Description=NeuTTS Gradio UI
+Requires=neutts-gradio.socket
+After=neutts-gradio.socket
+
+[Service]
+Type=simple
+User=op
+Group=op
+WorkingDirectory=/home/op/neutts-openai-gpu-server
+Environment=NEUTTS_VENV=/home/op/neutts/.venv
+Environment=NEUTTS_UI_BASE_URL=http://127.0.0.1:12435
+Environment=NEUTTS_UI_HOST=127.0.0.1
+Environment=NEUTTS_UI_PORT=7860
+Environment=NEUTTS_UI_SHARE=0
+ExecStart=/home/op/neutts/.venv/bin/python /home/op/neutts-openai-gpu-server/gradio_app.py --base-url ${NEUTTS_UI_BASE_URL} --host ${NEUTTS_UI_HOST} --port ${NEUTTS_UI_PORT}
+Restart=on-failure
+RestartSec=3
+Sockets=neutts-gradio.socket
+
+[Install]
+WantedBy=multi-user.target

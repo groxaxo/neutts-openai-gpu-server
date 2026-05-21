@@ -1,0 +1,9 @@
+[Unit]
+Description=NeuTTS Gradio UI Socket
+
+[Socket]
+ListenStream=127.0.0.1:7860
+Backlog=128
+
+[Install]
+WantedBy=sockets.target

@@ -7,6 +7,7 @@ import urllib.request
 from pathlib import Path
 import tempfile
 import time
+import uvicorn
 
 import gradio as gr
 
@@ -136,6 +137,18 @@ def refresh_voices(base_url: str):
     return gr.Dropdown.update(choices=voices, value=voices[0])
 
 
+def _systemd_listen_fd() -> int | None:
+    try:
+        if os.environ.get("LISTEN_PID") != str(os.getpid()):
+            return None
+        count = int(os.environ.get("LISTEN_FDS") or "0")
+        if count <= 0:
+            return None
+        return 3
+    except Exception:
+        return None
+
+
 def build_ui(base_url_default: str, host: str, port: int, share: bool):
     voices = fetch_voices(base_url_default)
     if not voices:
@@ -204,7 +217,7 @@ def build_ui(base_url_default: str, host: str, port: int, share: bool):
         )
 
     app.queue()
-    app.launch(server_name=host, server_port=port, share=share)
+    return app
 
 
 def main():
@@ -218,7 +231,25 @@ def main():
     parser.add_argument("--share", action="store_true")
     args = parser.parse_args()
 
-    build_ui(args.base_url, args.host, args.port, args.share)
+    app = build_ui(args.base_url, args.host, args.port, args.share)
+
+    listen_fd = _systemd_listen_fd()
+    if listen_fd is None:
+        app.launch(server_name=args.host, server_port=args.port, share=args.share)
+        return
+
+    if args.share:
+        print("Share mode ignored in socket-activated mode. Use direct service launch for share URLs.")
+    server = uvicorn.Server(
+        uvicorn.Config(
+            app=app.app,
+            host=args.host,
+            port=args.port,
+            fd=listen_fd,
+            log_level="info",
+        )
+    )
+    server.run()
 
 
 if __name__ == "__main__":
