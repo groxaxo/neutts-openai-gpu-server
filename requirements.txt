@@ -1,3 +1,4 @@
 soundfile==0.13.1
 torch>=2.8.0
 neutts[llama,onnx]>=1.2.0
+gradio>=4.44.0

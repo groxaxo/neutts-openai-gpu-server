@@ -67,6 +67,60 @@ Benchmark:
   --voice jo
 ```
 
+### Browser UI (Gradio)
+
+Start the UI:
+
+```bash
+cd /home/op/neutts-openai-gpu-server
+./scripts/launch_gradio_local.sh
+```
+
+Open:
+
+```text
+http://127.0.0.1:7860
+```
+
+If the endpoint is on another port, set it before launch:
+
+```bash
+NEUTTS_UI_BASE_URL=http://127.0.0.1:8882 ./scripts/launch_gradio_local.sh
+```
+
+Enable temporary public sharing (useful for remote machines):
+
+```bash
+NEUTTS_UI_SHARE=1 ./scripts/launch_gradio_local.sh
+```
+
+Run in background:
+
+```bash
+./scripts/start_gradio_daemon_local.sh
+tail -f /tmp/neutts_gradio_server.log
+```
+
+Stop:
+
+```bash
+./scripts/stop_gradio_local.sh
+```
+
+Systemd (auto-start):
+
+```bash
+sudo cp systemd/neutts-gradio.service.example /etc/systemd/system/neutts-gradio.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now neutts-gradio.service
+```
+
+Stop it with:
+
+```bash
+sudo systemctl stop neutts-gradio.service
+```
+
 ## Reproduce on another Linux/NVIDIA machine
 
 1. Install system dependencies:
@@ -172,6 +226,10 @@ http://127.0.0.1:12436/v1/audio/speech
 - `NEUTTS_LLAMA_UBATCH`: forwarded to llama.cpp `n_ubatch`
 - `NEUTTS_LLAMA_FLASH_ATTN`: force llama.cpp `flash_attn`, for example `0`
 - `NEUTTS_LLAMA_OFFLOAD_KQV`: force llama.cpp `offload_kqv`
+- `NEUTTS_UI_BASE_URL`: Gradio backend base URL, default `http://127.0.0.1:12435`
+- `NEUTTS_UI_HOST`: Gradio bind host, default `127.0.0.1`
+- `NEUTTS_UI_PORT`: Gradio port, default `7860`
+- `NEUTTS_UI_SHARE`: set to `1` to enable Gradio public sharing
 
 ## Notes
 
