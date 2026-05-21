@@ -217,6 +217,10 @@ def build_ui(base_url_default: str, host: str, port: int, share: bool):
         )
 
     app.queue()
+    # Socket-activated ASGI serving does not need Gradio's generated API docs.
+    # Pre-seeding this avoids Gradio schema-generation failures in newer
+    # Python/Pydantic combinations while leaving the browser UI intact.
+    app.app.api_info = {"named_endpoints": {}, "unnamed_endpoints": {}}
     return app
 
 
