@@ -133,8 +133,9 @@ Look for:
   "llama_gpu_offload_supported": true,
   "cpu_affinity": [0, 1, 2, 3],
   "llama_options": {
-    "n_threads": 4,
-    "n_threads_batch": 4
+    "n_threads": 2,
+    "n_threads_batch": 2,
+    "flash_attn": false
   }
 }
 ```
@@ -183,3 +184,5 @@ http://127.0.0.1:12436/v1/audio/speech
 - On non-hybrid CPUs there are no P/E cores. A useful first tuning pass is to
   pin the server to one logical CPU per physical core, for example `0-3` on a
   4-core/8-thread i7-4790.
+- On older CUDA GPUs like the GTX 750 Ti, `NEUTTS_LLAMA_FLASH_ATTN=0` can be
+  much faster than llama.cpp flash attention. Benchmark both on newer cards.
